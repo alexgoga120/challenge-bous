@@ -72,6 +72,8 @@ for test service use:
 
 ```bash
     python3 ./servicio.py
+
+    #this py use postgress as user and password as password
 ```
 
 to get response in shell use :
