@@ -4,15 +4,16 @@ SELECT 'CREATE DATABASE bous_debit' WHERE NOT EXISTS (SELECT FROM pg_database WH
 
 DROP SCHEMA IF EXISTS challenge_bous CASCADE;
 CREATE SCHEMA challenge_bous;
+SET SEARCH_PATH TO challenge_bous;
 
 CREATE TABLE challenge_bous.work_table(
     id INT PRIMARY KEY,
     client VARCHAR(75),
     contract_num VARCHAR(5),
-    purchase_date DATE,
+    purchase_date VARCHAR(20),
     city VARCHAR(15),
     company VARCHAR(30),
-    debit DECIMAL(10,2)
+    debit VARCHAR(12)
 );
 
 CREATE TABLE challenge_bous.valid_debits(
@@ -56,3 +57,51 @@ CREATE TABLE challenge_bous.data_companies(
     fk_company_id INTEGER REFERENCES "challenge_bous"."companies" (id),
     fk_data_calculate_id INTEGER REFERENCES "challenge_bous"."data_calculations" (run_id)
 );
+
+CREATE OR REPLACE FUNCTION CHALLENGE_BOUS.VALID_HEADER_TYPE(IN CLIENT VARCHAR, IN CONTRACT_NUM VARCHAR, IN PURCHASE_DATE VARCHAR, IN CITY VARCHAR, IN COMPANY VARCHAR, IN DEBIT VARCHAR) RETURNS BOOLEAN AS $$
+BEGIN
+    BEGIN
+        --Cliente no contenga numeros
+        if client ~ '\d' OR client IS NULL then
+            RETURN FALSE;
+        end if;
+
+        --Numero de contrato
+        --Buscar caracteres especiales, excepto el guion "-"
+        if contract_num ~ '[^a-zA-Z0-9-]' OR contract_num ~ NULL then
+            RETURN FALSE;
+        end if;
+
+        --fecha de compra que cumpla el formato
+        if purchase_date IS NULL then
+            RETURN FALSE;
+        end if;
+        PERFORM to_date(purchase_date, 'YYYY-MM-DD');
+
+        --Ciudad no contenga numeros
+        if city ~ '\d' OR city IS NULL then
+            RETURN FALSE;
+        end if;
+
+        --Compañia
+        --Buscar caracteres especiales, excepto un espacio " "
+        if company ~ '[^a-zA-Z0-9 ]' OR company IS NULL then
+            RETURN FALSE;
+        end if;
+
+        -- Eliminar caracteres no numéricos (excepto . y -)
+        if debit IS NULL then
+            RETURN FALSE;
+        end if;
+        debit := regexp_replace(debit, '[^\d.-]', '', 'g');
+
+        -- Intenta convertir el valor a decimal
+        PERFORM debit::DECIMAL;
+
+        RETURN TRUE;
+    EXCEPTION
+        WHEN others THEN
+            RETURN FALSE;
+    END;
+END;
+$$ LANGUAGE PLPGSQL;
