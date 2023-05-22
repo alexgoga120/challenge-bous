@@ -22,6 +22,7 @@ Goal: transform xlsx file to cvs file and process data given
 
 ```bash
     pip install Flask
+    pip install -U Flask-SQLAlchemy
 ```
 
 ### Install postgres dependency
